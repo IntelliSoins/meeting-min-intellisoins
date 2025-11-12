@@ -21,6 +21,7 @@ import Analytics from '@/lib/analytics';
 import { invoke } from '@tauri-apps/api/core';
 import { toast } from 'sonner';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 interface SummaryGeneratorButtonGroupProps {
   modelConfig: ModelConfig;
@@ -49,6 +50,10 @@ export function SummaryGeneratorButtonGroup({
   hasTranscripts = true,
   isModelConfigLoading = false
 }: SummaryGeneratorButtonGroupProps) {
+  const t = useTranslations('summary');
+  const tMeeting = useTranslations('meetingDetails');
+  const tSettings = useTranslations('settings.summarizationModel');
+
   const [isCheckingModels, setIsCheckingModels] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
 
@@ -106,44 +111,44 @@ export function SummaryGeneratorButtonGroup({
         disabled={summaryStatus === 'processing' || isCheckingModels || isModelConfigLoading}
         title={
           isModelConfigLoading
-            ? 'Loading model configuration...'
+            ? t('generating')
             : summaryStatus === 'processing'
-            ? 'Generating summary...'
+            ? t('generatingSummary')
             : isCheckingModels
-            ? 'Checking models...'
-            : 'Generate AI Summary'
+            ? t('generating')
+            : t('generateSummary')
         }
       >
         {summaryStatus === 'processing' || isCheckingModels || isModelConfigLoading ? (
           <>
             <Loader2 className="animate-spin xl:mr-2" size={18} />
-            <span className="hidden xl:inline">Processing...</span>
+            <span className="hidden xl:inline">{t('generating')}</span>
           </>
         ) : (
           <>
             <Sparkles className="xl:mr-2" size={18} />
-            <span className="hidden lg:inline xl:inline">Generate Note</span>
+            <span className="hidden lg:inline xl:inline">{t('generateSummary')}</span>
           </>
         )}
       </Button>
-      
+
       {/* Settings button */}
       <Dialog open={settingsDialogOpen} onOpenChange={setSettingsDialogOpen}>
         <DialogTrigger asChild>
           <Button
             variant="outline"
             size="sm"
-            title="Summary Settings"
+            title={tSettings('title')}
           >
             <Settings />
-            <span className="hidden lg:inline">AI Model</span>
+            <span className="hidden lg:inline">{tSettings('title')}</span>
           </Button>
         </DialogTrigger>
         <DialogContent
           aria-describedby={undefined}
         >
           <VisuallyHidden>
-            <DialogTitle>Model Settings</DialogTitle>
+            <DialogTitle>{tSettings('title')}</DialogTitle>
           </VisuallyHidden>
           <ModelSettingsModal
             onSave={async (config) => {
@@ -166,10 +171,10 @@ export function SummaryGeneratorButtonGroup({
             <Button
               variant="outline"
               size="sm"
-              title="Select summary template"
+              title={tMeeting('selectTemplate')}
             >
               <FileText />
-              <span className="hidden lg:inline">Template</span>
+              <span className="hidden lg:inline">{tMeeting('templates')}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">

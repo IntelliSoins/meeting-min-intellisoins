@@ -4,15 +4,19 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Settings2, Mic, Database as DatabaseIcon, SparkleIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { invoke } from '@tauri-apps/api/core';
+import { useTranslations } from 'next-intl';
 import { TranscriptSettings, TranscriptModelProps } from '@/components/TranscriptSettings';
 import { RecordingSettings } from '@/components/RecordingSettings';
 import { PreferenceSettings } from '@/components/PreferenceSettings';
 import { SummaryModelSettings } from '@/components/SummaryModelSettings';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 type SettingsTab = 'general' | 'recording' | 'Transcriptionmodels' | 'summaryModels';
 
 export default function SettingsPage() {
   const router = useRouter();
+  const t = useTranslations('settings');
+  const tCommon = useTranslations('common');
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [transcriptModelConfig, setTranscriptModelConfig] = useState<TranscriptModelProps>({
     provider: 'localWhisper',
@@ -21,10 +25,10 @@ export default function SettingsPage() {
   });
 
   const tabs = [
-    { id: 'general' as const, label: 'General', icon: <Settings2 className="w-4 h-4" /> },
-    { id: 'recording' as const, label: 'Recordings', icon: <Mic className="w-4 h-4" /> },
-    { id: 'Transcriptionmodels' as const, label: 'Transcription', icon: <DatabaseIcon className="w-4 h-4" /> },
-    { id: 'summaryModels' as const, label: 'Summary', icon: <SparkleIcon className="w-4 h-4" /> }
+    { id: 'general' as const, label: t('general'), icon: <Settings2 className="w-4 h-4" /> },
+    { id: 'recording' as const, label: t('recordings'), icon: <Mic className="w-4 h-4" /> },
+    { id: 'Transcriptionmodels' as const, label: t('transcription'), icon: <DatabaseIcon className="w-4 h-4" /> },
+    { id: 'summaryModels' as const, label: t('summary'), icon: <SparkleIcon className="w-4 h-4" /> }
   ];
 
   // Load saved transcript configuration on mount
@@ -73,9 +77,9 @@ export default function SettingsPage() {
               className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
-              <span>Back</span>
+              <span>{tCommon('back')}</span>
             </button>
-            <h1 className="text-3xl font-bold">Settings</h1>
+            <h1 className="text-3xl font-bold">{t('title')}</h1>
           </div>
         </div>
       </div>
@@ -103,7 +107,14 @@ export default function SettingsPage() {
 
             {/* Tab Content */}
             <div className="p-6">
-              {activeTab === 'general' && <PreferenceSettings />}
+              {activeTab === 'general' && (
+                <div className="space-y-6">
+                  <PreferenceSettings />
+                  <div className="border-t pt-6">
+                    <LanguageSwitcher />
+                  </div>
+                </div>
+              )}
               {activeTab === 'recording' && <RecordingSettings />}
               {activeTab === 'Transcriptionmodels' && (
                 <TranscriptSettings

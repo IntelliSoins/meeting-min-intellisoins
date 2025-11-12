@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useTranslations } from "next-intl"
 import { Switch } from "./ui/switch"
 import { FolderOpen } from "lucide-react"
 import { invoke } from "@tauri-apps/api/core"
@@ -35,6 +36,8 @@ interface NotificationSettings {
 }
 
 export function PreferenceSettings() {
+  const t = useTranslations('settings');
+  const tCommon = useTranslations('common');
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean | null>(null);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings | null>(null);
   const [storageLocations, setStorageLocations] = useState<StorageLocations | null>(null);
@@ -150,7 +153,7 @@ export function PreferenceSettings() {
   };
 
   if (loading || notificationsEnabled === null) {
-    return <div className="max-w-2xl mx-auto p-6">Loading Preferences...</div>
+    return <div className="max-w-2xl mx-auto p-6">{tCommon('loading')}</div>
   }
 
   return (
@@ -159,8 +162,8 @@ export function PreferenceSettings() {
       <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Notifications</h3>
-            <p className="text-sm text-gray-600">Enable or disable notifications of start and end of meeting</p>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('notifications.title')}</h3>
+            <p className="text-sm text-gray-600">{t('notifications.description')}</p>
           </div>
           <Switch checked={notificationsEnabled} onCheckedChange={setNotificationsEnabled} />
         </div>
@@ -168,9 +171,9 @@ export function PreferenceSettings() {
 
       {/* Data Storage Locations Section */}
       <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Data Storage Locations</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('storage.title')}</h3>
         <p className="text-sm text-gray-600 mb-6">
-          View and access where Meetily stores your data
+          {t('storage.description')}
         </p>
 
         <div className="space-y-4">
@@ -206,23 +209,23 @@ export function PreferenceSettings() {
 
           {/* Recordings Location */}
           <div className="p-4 border rounded-lg bg-gray-50">
-            <div className="font-medium mb-2">Meeting Recordings</div>
+            <div className="font-medium mb-2">{t('storage.meetingRecordings')}</div>
             <div className="text-sm text-gray-600 mb-3 break-all font-mono text-xs">
-              {storageLocations?.recordings || 'Loading...'}
+              {storageLocations?.recordings || tCommon('loading')}
             </div>
             <button
               onClick={() => handleOpenFolder('recordings')}
               className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-100 transition-colors"
             >
               <FolderOpen className="w-4 h-4" />
-              Open Folder
+              {tCommon('openFolder')}
             </button>
           </div>
         </div>
 
         <div className="mt-4 p-3 bg-blue-50 rounded-md">
           <p className="text-xs text-blue-800">
-            <strong>Note:</strong> Database and models are stored together in your application data directory for unified management.
+            {t('storage.note')}
           </p>
         </div>
       </div>

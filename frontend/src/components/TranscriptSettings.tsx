@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { invoke } from '@tauri-apps/api/core';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Input } from './ui/input';
@@ -22,6 +23,8 @@ export interface TranscriptSettingsProps {
 }
 
 export function TranscriptSettings({ transcriptModelConfig, setTranscriptModelConfig, onModelSelect }: TranscriptSettingsProps) {
+    const t = useTranslations('settings.transcriptionModel');
+    const tSummary = useTranslations('settings.summarizationModel');
     const [apiKey, setApiKey] = useState<string | null>(transcriptModelConfig.apiKey || null);
     const [showApiKey, setShowApiKey] = useState<boolean>(false);
     const [isApiKeyLocked, setIsApiKeyLocked] = useState<boolean>(true);
@@ -100,7 +103,7 @@ export function TranscriptSettings({ transcriptModelConfig, setTranscriptModelCo
                 <div className="space-y-4 pb-6">
                     <div>
                         <Label className="block text-sm font-medium text-gray-700 mb-1">
-                            Transcript Model
+                            {t('title')}
                         </Label>
                         <div className="flex space-x-2 mx-1">
                             <Select
@@ -115,15 +118,15 @@ export function TranscriptSettings({ transcriptModelConfig, setTranscriptModelCo
                                 }}
                             >
                                 <SelectTrigger className='focus:ring-1 focus:ring-blue-500 focus:border-blue-500'>
-                                    <SelectValue placeholder="Select provider" />
+                                    <SelectValue placeholder={tSummary('selectProvider')} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="parakeet">⚡ Parakeet (Recommended - Real-time / Accurate)</SelectItem>
-                                    <SelectItem value="localWhisper">🏠 Local Whisper (High Accuracy)</SelectItem>
-                                    {/* <SelectItem value="deepgram">☁️ Deepgram (Backup)</SelectItem>
-                                    <SelectItem value="elevenLabs">☁️ ElevenLabs</SelectItem>
-                                    <SelectItem value="groq">☁️ Groq</SelectItem>
-                                    <SelectItem value="openai">☁️ OpenAI</SelectItem> */}
+                                    <SelectItem value="parakeet">{t('parakeetRecommended')}</SelectItem>
+                                    <SelectItem value="localWhisper">{t('localWhisper')}</SelectItem>
+                                    {/* <SelectItem value="deepgram">{t('deepgram')}</SelectItem>
+                                    <SelectItem value="elevenLabs">{t('elevenLabs')}</SelectItem>
+                                    <SelectItem value="groq">{t('groq')}</SelectItem>
+                                    <SelectItem value="openai">{t('openai')}</SelectItem> */}
                                 </SelectContent>
                             </Select>
 
@@ -136,7 +139,7 @@ export function TranscriptSettings({ transcriptModelConfig, setTranscriptModelCo
                                     }}
                                 >
                                     <SelectTrigger className='focus:ring-1 focus:ring-blue-500 focus:border-blue-500'>
-                                        <SelectValue placeholder="Select model" />
+                                        <SelectValue placeholder={tSummary('selectModel')} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {modelOptions[transcriptModelConfig.provider].map((model) => (
@@ -173,7 +176,7 @@ export function TranscriptSettings({ transcriptModelConfig, setTranscriptModelCo
                     {requiresApiKey && (
                         <div>
                             <Label className="block text-sm font-medium text-gray-700 mb-1">
-                                API Key
+                                {tSummary('apiKey')}
                             </Label>
                             <div className="relative mx-1">
                                 <Input
@@ -184,7 +187,7 @@ export function TranscriptSettings({ transcriptModelConfig, setTranscriptModelCo
                                     onChange={(e) => setApiKey(e.target.value)}
                                     disabled={isApiKeyLocked}
                                     onClick={handleInputClick}
-                                    placeholder="Enter your API key"
+                                    placeholder={tSummary('enterApiKey')}
                                 />
                                 {isApiKeyLocked && (
                                     <div
@@ -200,7 +203,7 @@ export function TranscriptSettings({ transcriptModelConfig, setTranscriptModelCo
                                         onClick={() => setIsApiKeyLocked(!isApiKeyLocked)}
                                         className={`transition-colors duration-200 ${isLockButtonVibrating ? 'animate-vibrate text-red-500' : ''
                                             }`}
-                                        title={isApiKeyLocked ? "Unlock to edit" : "Lock to prevent editing"}
+                                        title={isApiKeyLocked ? tSummary('unlockToEdit') : tSummary('lockToPrevent')}
                                     >
                                         {isApiKeyLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
                                     </Button>

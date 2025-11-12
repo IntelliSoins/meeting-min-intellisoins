@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ButtonGroup } from '@/components/ui/button-group';
 import { Copy, Save, Loader2, Search, FolderOpen } from 'lucide-react';
 import Analytics from '@/lib/analytics';
+import { useTranslations } from 'next-intl';
 
 interface SummaryUpdaterButtonGroupProps {
   isSaving: boolean;
@@ -24,6 +25,9 @@ export function SummaryUpdaterButtonGroup({
   onOpenFolder,
   hasSummary
 }: SummaryUpdaterButtonGroupProps) {
+  const t = useTranslations('common');
+  const tMeeting = useTranslations('meetingDetails');
+
   return (
     <ButtonGroup>
       {/* Save button */}
@@ -31,7 +35,7 @@ export function SummaryUpdaterButtonGroup({
         variant="outline"
         size="sm"
         className={`${isDirty ? 'bg-green-200' : ""}`}
-        title={isSaving ? "Saving" : "Save Changes"}
+        title={isSaving ? t('loading') : t('save')}
         onClick={() => {
           Analytics.trackButtonClick('save_changes', 'meeting_details');
           onSave();
@@ -41,12 +45,12 @@ export function SummaryUpdaterButtonGroup({
         {isSaving ? (
           <>
             <Loader2 className="animate-spin" />
-            <span className="hidden lg:inline">Saving...</span>
+            <span className="hidden lg:inline">{t('loading')}</span>
           </>
         ) : (
           <>
             <Save />
-            <span className="hidden lg:inline">Save</span>
+            <span className="hidden lg:inline">{t('save')}</span>
           </>
         )}
       </Button>
@@ -55,7 +59,7 @@ export function SummaryUpdaterButtonGroup({
       <Button
         variant="outline"
         size="sm"
-        title="Copy Summary"
+        title={tMeeting('copySummary')}
         onClick={() => {
           Analytics.trackButtonClick('copy_summary', 'meeting_details');
           onCopy();
@@ -64,7 +68,7 @@ export function SummaryUpdaterButtonGroup({
         className="cursor-pointer"
       >
         <Copy />
-        <span className="hidden lg:inline">Copy</span>
+        <span className="hidden lg:inline">{t('copy')}</span>
       </Button>
 
       {/* Recording folder button */}
@@ -76,10 +80,10 @@ export function SummaryUpdaterButtonGroup({
           Analytics.trackButtonClick('open_recording_folder', 'meeting_details');
           onOpenFolder();
         }}
-        title="Open Recording Folder"
+        title={tMeeting('openRecordingFolder')}
       >
         <FolderOpen className="xl:mr-2" size={18} />
-        <span className="hidden xl:inline">Recording</span>
+        <span className="hidden xl:inline">{tMeeting('openRecordingFolder')}</span>
       </Button>
 
       {/* Find button */}

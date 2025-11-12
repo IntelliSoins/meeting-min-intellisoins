@@ -5,6 +5,7 @@ import { Summary, Block } from '@/types';
 import { Section } from './Section';
 import { EditableTitle } from '../EditableTitle';
 import { ExclamationTriangleIcon, CheckCircleIcon, ClipboardDocumentCheckIcon } from '@heroicons/react/24/outline';
+import { useTranslations } from 'next-intl';
 
 interface Props {
   summary: Summary | null;
@@ -20,6 +21,8 @@ interface Props {
 }
 
 export const AISummary = ({ summary, status, error, onSummaryChange, onRegenerateSummary, meeting }: Props) => {
+  const t = useTranslations('summary');
+
   const generateUniqueId = (sectionKey: string) => {
     return `${sectionKey}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   };
@@ -53,14 +56,14 @@ export const AISummary = ({ summary, status, error, onSummaryChange, onRegenerat
   const currentSummary = useMemo(() => {
     if (!summary) {
       return {
-        Agenda: { title: "Agenda", blocks: [] },
-        Decisions: { title: "Decisions", blocks: [] },
-        ActionItems: { title: "Action Items", blocks: [] },
-        ClosingRemarks: { title: "Closing Remarks", blocks: [] }
+        Agenda: { title: t('agenda'), blocks: [] },
+        Decisions: { title: t('decisions'), blocks: [] },
+        ActionItems: { title: t('actionItems'), blocks: [] },
+        ClosingRemarks: { title: t('closingRemarks'), blocks: [] }
       };
     }
     return ensureUniqueBlockIds(summary);
-  }, [summary]);
+  }, [summary, t]);
 
   const [selectedBlocks, setSelectedBlocks] = useState<string[]>([]);
   const [lastSelectedBlock, setLastSelectedBlock] = useState<string | null>(null);
@@ -780,12 +783,12 @@ export const AISummary = ({ summary, status, error, onSummaryChange, onRegenerat
           <button
             onClick={onRegenerateSummary}
             className="px-2 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md flex items-center space-x-1"
-            title="Regenerate Summary"
+            title={t('regenerate')}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            <span className="ml-1">Regenerate</span>
+            <span className="ml-1">{t('regenerate')}</span>
           </button>
         </div>
       </div> */}

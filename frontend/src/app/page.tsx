@@ -31,6 +31,7 @@ import { Copy, GlobeIcon, Settings } from 'lucide-react';
 import { MicrophoneIcon } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import { ButtonGroup } from '@/components/ui/button-group';
+import { useTranslations } from 'next-intl';
 
 
 
@@ -50,6 +51,17 @@ interface OllamaModel {
 }
 
 export default function Home() {
+  // Translation hooks
+  const t = useTranslations('common');
+  const tRecording = useTranslations('recording');
+  const tTranscription = useTranslations('transcription');
+  const tSummary = useTranslations('summary');
+  const tSettings = useTranslations('settings');
+  const tDevices = useTranslations('devices');
+  const tNotifications = useTranslations('notifications');
+  const tErrors = useTranslations('errors');
+  const tMeetingDetails = useTranslations('meetingDetails');
+
   const [isRecording, setIsRecordingState] = useState(false);
   const [transcripts, setTranscripts] = useState<Transcript[]>([]);
   const [showSummary, setShowSummary] = useState(false);
@@ -1008,10 +1020,10 @@ export default function Home() {
           }
 
           // Show success toast with navigation option
-          toast.success('Recording saved successfully!', {
-            description: `${freshTranscripts.length} transcript segments saved.`,
+          toast.success(tNotifications('saved'), {
+            description: `${freshTranscripts.length} ${tMeetingDetails('transcript')}.`,
             action: {
-              label: 'View Meeting',
+              label: tMeetingDetails('copySummary'),
               onClick: () => {
                 router.push(`/meeting-details?id=${meetingId}`);
                 Analytics.trackButtonClick('view_meeting_from_toast', 'recording_complete');
@@ -1081,8 +1093,8 @@ export default function Home() {
 
         } catch (saveError) {
           console.error('Failed to save meeting to database:', saveError);
-          toast.error('Failed to save meeting', {
-            description: saveError instanceof Error ? saveError.message : 'Unknown error'
+          toast.error(tErrors('failedToSave'), {
+            description: saveError instanceof Error ? saveError.message : tErrors('genericError')
           });
           throw saveError;
         } finally {
@@ -1447,8 +1459,8 @@ export default function Home() {
       .join('\n');
     navigator.clipboard.writeText(fullTranscript);
 
-    toast.success("Transcript copied to clipboard");
-  }, [transcripts]);
+    toast.success(tMeetingDetails('transcriptCopied'));
+  }, [transcripts, tMeetingDetails]);
 
   const handleGenerateSummary = useCallback(async () => {
     if (!transcripts.length) {
@@ -1505,7 +1517,7 @@ export default function Home() {
 
         // Auto-close modal if the downloaded model matches the selected one
         if (transcriptModelConfig.provider === 'localWhisper' && transcriptModelConfig.model === modelName) {
-          toast.success('Model ready! Closing window...', { duration: 1500 });
+          toast.success(t('done'), { duration: 1500 });
           setTimeout(() => setShowModelSelector(false), 1500);
         }
       });
@@ -1518,7 +1530,7 @@ export default function Home() {
 
         // Auto-close modal if the downloaded model matches the selected one
         if (transcriptModelConfig.provider === 'parakeet' && transcriptModelConfig.model === modelName) {
-          toast.success('Model ready! Closing window...', { duration: 1500 });
+          toast.success(t('done'), { duration: 1500 });
           setTimeout(() => setShowModelSelector(false), 1500);
         }
       });
@@ -1621,14 +1633,14 @@ export default function Home() {
       {showErrorAlert && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <Alert className="max-w-md mx-4 border-red-200 bg-white shadow-xl">
-            <AlertTitle className="text-red-800">Recording Stopped</AlertTitle>
+            <AlertTitle className="text-red-800">{tNotifications('recordingStopped')}</AlertTitle>
             <AlertDescription className="text-red-700">
               {errorMessage}
               <button
                 onClick={() => setShowErrorAlert(false)}
                 className="ml-2 text-red-600 hover:text-red-800 underline"
               >
-                Dismiss
+                {t('close')}
               </button>
             </AlertDescription>
           </Alert>
@@ -1637,14 +1649,14 @@ export default function Home() {
       {showChunkDropWarning && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <Alert className="max-w-lg mx-4 border-yellow-200 bg-white shadow-xl">
-            <AlertTitle className="text-yellow-800">Transcription Performance Warning</AlertTitle>
+            <AlertTitle className="text-yellow-800">{tErrors('transcriptionError')}</AlertTitle>
             <AlertDescription className="text-yellow-700">
               {chunkDropMessage}
               <button
                 onClick={() => setShowChunkDropWarning(false)}
                 className="ml-2 text-yellow-600 hover:text-yellow-800 underline"
               >
-                Dismiss
+                {t('close')}
               </button>
             </AlertDescription>
           </Alert>
@@ -1666,11 +1678,11 @@ export default function Home() {
                       onClick={() => {
                         handleCopyTranscript();
                       }}
-                      title="Copy Transcript"
+                      title={tMeetingDetails('copyTranscript')}
                     >
                       <Copy />
                       <span className='hidden md:inline'>
-                        Copy
+                        {t('copy')}
                       </span>
                     </Button>
                   )}
@@ -1679,34 +1691,34 @@ export default function Home() {
                       variant="outline"
                       size="sm"
                       onClick={() => setShowModelSelector(true)}
-                      title="Transcription Model Settings"
+                      title={tSettings('transcriptionModel.title')}
                     >
                       <Settings />
                       <span className='hidden md:inline'>
-                        Model
+                        {tSettings('transcription')}
                       </span>
                     </Button>
-                  
+
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setShowDeviceSettings(true)}
-                    title="Input/Output devices selection"
+                    title={tDevices('audioDevices')}
                   >
                     <MicrophoneIcon />
                     <span className='hidden md:inline'>
-                      Devices
+                      {tSettings('devices.title')}
                     </span>
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setShowLanguageSettings(true)}
-                    title="Language"
+                    title={tSettings('language.title')}
                   >
                     <GlobeIcon />
                     <span className='hidden md:inline'>
-                      Language
+                      {tSettings('language.title')}
                     </span>
                   </Button>
                   </ButtonGroup>
@@ -1900,7 +1912,7 @@ export default function Home() {
                 <div className="w-2/3 max-w-[750px] flex justify-center">
                   <div className="bg-white rounded-lg shadow-lg px-4 py-2 flex items-center space-x-2">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
-                    <span className="text-sm text-gray-700">Finalizing transcription...</span>
+                    <span className="text-sm text-gray-700">{tSummary('processingTranscript')}</span>
                   </div>
                 </div>
               </div>
@@ -1917,7 +1929,7 @@ export default function Home() {
                 <div className="w-2/3 max-w-[750px] flex justify-center">
                   <div className="bg-white rounded-lg shadow-lg px-4 py-2 flex items-center space-x-2">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
-                    <span className="text-sm text-gray-700">Saving transcript...</span>
+                    <span className="text-sm text-gray-700">{t('loading')}</span>
                   </div>
                 </div>
               </div>
@@ -1930,7 +1942,7 @@ export default function Home() {
               <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
                 {/* Header */}
                 <div className="flex justify-between items-center p-6 border-b">
-                  <h3 className="text-xl font-semibold text-gray-900">Preferences</h3>
+                  <h3 className="text-xl font-semibold text-gray-900">{t('settings')}</h3>
                   <button
                     onClick={() => setShowModelSettings(false)}
                     className="text-gray-500 hover:text-gray-700"
@@ -1948,11 +1960,11 @@ export default function Home() {
 
                   {/* Divider */}
                   <div className="border-t pt-8">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-4">AI Model Configuration</h4>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4">{tSettings('summarizationModel.summaryModelConfiguration')}</h4>
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Summarization Model
+                          {tSettings('summarizationModel.summarizationModel')}
                         </label>
                         <div className="flex space-x-2">
                           <select
@@ -1988,7 +2000,7 @@ export default function Home() {
                       </div>
                       {modelConfig.provider === 'ollama' && (
                         <div>
-                          <h4 className="text-lg font-bold mb-4">Available Ollama Models</h4>
+                          <h4 className="text-lg font-bold mb-4">{tSettings('summarizationModel.availableOllamaModels')}</h4>
                           {error && (
                             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
                               {error}
@@ -2003,8 +2015,8 @@ export default function Home() {
                                 onClick={() => setModelConfig(prev => ({ ...prev, model: model.name }))}
                               >
                                 <h3 className="font-bold">{model.name}</h3>
-                                <p className="text-gray-600">Size: {model.size}</p>
-                                <p className="text-gray-600">Modified: {model.modified}</p>
+                                <p className="text-gray-600">{tSettings('summarizationModel.withSizeOf')}: {model.size}</p>
+                                <p className="text-gray-600">{model.modified}</p>
                               </div>
                             ))}
                           </div>
@@ -2020,7 +2032,7 @@ export default function Home() {
                     onClick={() => setShowModelSettings(false)}
                     className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
-                    Done
+                    {t('done')}
                   </button>
                 </div>
               </div>
@@ -2032,7 +2044,7 @@ export default function Home() {
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
               <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Audio Device Settings</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">{tDevices('audioDevices')}</h3>
                   <button
                     onClick={() => setShowDeviceSettings(false)}
                     className="text-gray-500 hover:text-gray-700"
@@ -2052,16 +2064,16 @@ export default function Home() {
                 <div className="mt-6 flex justify-end">
                   <button
                     onClick={() => {
-                      const micDevice = selectedDevices.micDevice || 'Default';
-                      const systemDevice = selectedDevices.systemDevice || 'Default';
-                      toast.success("Devices selected", {
-                        description: `Microphone: ${micDevice}, System Audio: ${systemDevice}`
+                      const micDevice = selectedDevices.micDevice || tDevices('defaultMicrophone');
+                      const systemDevice = selectedDevices.systemDevice || tDevices('defaultSystemAudio');
+                      toast.success(tNotifications('saved'), {
+                        description: `${tDevices('microphone')}: ${micDevice}, ${tDevices('systemAudio')}: ${systemDevice}`
                       });
                       setShowDeviceSettings(false);
                     }}
                     className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
-                    Done
+                    {t('done')}
                   </button>
                 </div>
               </div>
@@ -2073,7 +2085,7 @@ export default function Home() {
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
               <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Language Settings</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">{tSettings('language.title')}</h3>
                   <button
                     onClick={() => setShowLanguageSettings(false)}
                     className="text-gray-500 hover:text-gray-700"
@@ -2096,7 +2108,7 @@ export default function Home() {
                     onClick={() => setShowLanguageSettings(false)}
                     className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
-                    Done
+                    {t('done')}
                   </button>
                 </div>
               </div>
@@ -2110,7 +2122,7 @@ export default function Home() {
                 {/* Fixed Header */}
                 <div className="flex justify-between items-center p-6 pb-4 border-b border-gray-200">
                   <h3 className="text-lg font-semibold text-gray-900">
-                    {modelSelectorMessage ? 'Speech Recognition Setup Required' : 'Transcription Model Settings'}
+                    {modelSelectorMessage ? tSettings('transcriptionModel.title') : tSettings('transcriptionModel.title')}
                   </h3>
                   <button
                     onClick={() => {
@@ -2133,7 +2145,7 @@ export default function Home() {
                       <div className="flex items-start space-x-3">
                         <span className="text-yellow-600 text-xl">⚠️</span>
                         <div>
-                          <h4 className="font-medium text-yellow-800 mb-1">Model Required</h4>
+                          <h4 className="font-medium text-yellow-800 mb-1">{tErrors('modelNotFound')}</h4>
                           <p className="text-sm text-yellow-700">
                             {modelSelectorMessage}
                           </p>
@@ -2166,8 +2178,8 @@ export default function Home() {
                       <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                     </label>
                     <div>
-                      <p className="text-sm font-medium text-gray-700">Show Confidence Indicators</p>
-                      <p className="text-xs text-gray-500">Display colored dots showing transcription confidence quality</p>
+                      <p className="text-sm font-medium text-gray-700">{tTranscription('speakToSeeTranscription')}</p>
+                      <p className="text-xs text-gray-500">{tTranscription('listeningForSpeech')}</p>
                     </div>
                   </div>
 
@@ -2179,7 +2191,7 @@ export default function Home() {
                     }}
                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
                   >
-                    {modelSelectorMessage ? 'Cancel' : 'Done'}
+                    {modelSelectorMessage ? t('cancel') : t('done')}
                   </button>
                 </div>
               </div>
