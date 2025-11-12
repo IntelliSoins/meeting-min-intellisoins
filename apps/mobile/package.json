@@ -1,0 +1,36 @@
+{
+  "name": "@meetily/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "tauri:ios": "tauri ios dev",
+    "tauri:ios:build": "tauri ios build",
+    "tauri:android": "tauri android dev",
+    "tauri:android:build": "tauri android build"
+  },
+  "dependencies": {
+    "@meetily/shared-ui": "workspace:*",
+    "@meetily/shared-logic": "workspace:*",
+    "@meetily/i18n": "workspace:*",
+    "@tauri-apps/api": "^2.6.0",
+    "@tauri-apps/plugin-store": "^2.4.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "next-intl": "^4.5.2"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.1.0",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7"
+  }
+}
