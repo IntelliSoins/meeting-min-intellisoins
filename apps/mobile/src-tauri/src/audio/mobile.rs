@@ -1,12 +1,107 @@
 use anyhow::Result;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::Stream;
+use std::sync::{Arc, Mutex};
+use tokio::sync::mpsc;
+
+use super::buffer::AudioBuffer;
+use crate::whisper_engine::MobileWhisperEngine;
 
 pub struct AudioStream {
     _stream: Stream,
+    stop_tx: mpsc::UnboundedSender<()>,
 }
 
-pub fn start_microphone_capture() -> Result<AudioStream> {
+impl AudioStream {
+    pub fn stop(&self) {
+        let _ = self.stop_tx.send(());
+    }
+}
+
+pub struct AudioProcessor {
+    buffer: Arc<Mutex<AudioBuffer>>,
+    whisper_engine: Arc<MobileWhisperEngine>,
+    event_tx: mpsc::UnboundedSender<TranscriptionEvent>,
+}
+
+#[derive(Debug, Clone)]
+pub struct TranscriptionEvent {
+    pub text: String,
+    pub timestamp: String,
+    pub is_final: bool,
+}
+
+impl AudioProcessor {
+    pub fn new(
+        whisper_engine: Arc<MobileWhisperEngine>,
+        event_tx: mpsc::UnboundedSender<TranscriptionEvent>,
+    ) -> Self {
+        Self {
+            buffer: Arc::new(Mutex::new(AudioBuffer::new())),
+            whisper_engine,
+            event_tx,
+        }
+    }
+
+    pub fn process_chunk(&self, data: &[f32]) {
+        let mut buffer = match self.buffer.lock() {
+            Ok(b) => b,
+            Err(e) => {
+                log::error!("Failed to lock buffer: {}", e);
+                return;
+            }
+        };
+
+        // Check for speech
+        let has_speech = buffer.has_speech(data);
+        buffer.update_speech_state(has_speech);
+
+        // Add samples to buffer
+        buffer.push_samples(data);
+
+        // Check if we should transcribe
+        if buffer.should_transcribe() {
+            log::info!(
+                "Transcribing buffer ({:.1}s of audio)",
+                buffer.duration_secs()
+            );
+
+            // Extract audio for transcription
+            let audio = buffer.extract_for_transcription();
+
+            // Transcribe in background
+            let whisper = Arc::clone(&self.whisper_engine);
+            let event_tx = self.event_tx.clone();
+
+            tokio::spawn(async move {
+                match whisper.transcribe_chunk(&audio) {
+                    Ok(text) => {
+                        if !text.is_empty() {
+                            log::info!("Transcription: {}", text);
+                            let event = TranscriptionEvent {
+                                text,
+                                timestamp: chrono::Utc::now().to_rfc3339(),
+                                is_final: true,
+                            };
+                            let _ = event_tx.send(event);
+                        }
+                    }
+                    Err(e) => {
+                        log::error!("Transcription failed: {}", e);
+                    }
+                }
+            });
+        }
+    }
+
+    pub fn get_buffer(&self) -> Arc<Mutex<AudioBuffer>> {
+        Arc::clone(&self.buffer)
+    }
+}
+
+pub fn start_microphone_capture(
+    processor: Arc<AudioProcessor>,
+) -> Result<AudioStream> {
     log::info!("Starting microphone capture for mobile");
 
     let host = cpal::default_host();
@@ -19,14 +114,23 @@ pub fn start_microphone_capture() -> Result<AudioStream> {
     let config = device.default_input_config()?;
     log::info!("Audio config: {:?}", config);
 
+    // Create stop channel
+    let (stop_tx, mut stop_rx) = mpsc::unbounded_channel();
+
+    // Clone processor for the stream callback
+    let processor_clone = Arc::clone(&processor);
+
     let stream = device.build_input_stream(
         &config.into(),
         move |data: &[f32], _: &cpal::InputCallbackInfo| {
-            // TODO: Process audio chunk
-            // - Apply VAD (Voice Activity Detection) to filter silence
-            // - Buffer audio until we have ~30 seconds
-            // - Send to Whisper for transcription
-            process_audio_chunk(data);
+            // Check if we should stop
+            if stop_rx.try_recv().is_ok() {
+                log::info!("Stop signal received");
+                return;
+            }
+
+            // Process audio chunk
+            processor_clone.process_chunk(data);
         },
         |err| {
             log::error!("Audio stream error: {}", err);
@@ -37,35 +141,10 @@ pub fn start_microphone_capture() -> Result<AudioStream> {
     stream.play()?;
     log::info!("Audio stream started successfully");
 
-    Ok(AudioStream { _stream: stream })
-}
-
-fn process_audio_chunk(data: &[f32]) {
-    // Placeholder for audio processing
-    // In the full implementation, this will:
-    // 1. Check if audio contains speech (VAD)
-    // 2. Buffer speech segments
-    // 3. Send to Whisper when buffer is full
-
-    log::trace!("Processing audio chunk of {} samples", data.len());
-
-    // Simple VAD placeholder: check RMS energy
-    let rms = calculate_rms(data);
-    let threshold = 0.02; // Adjust based on testing
-
-    if rms > threshold {
-        log::debug!("Speech detected (RMS: {:.4})", rms);
-        // TODO: Add to buffer and transcribe
-    }
-}
-
-fn calculate_rms(samples: &[f32]) -> f32 {
-    if samples.is_empty() {
-        return 0.0;
-    }
-
-    let sum_squares: f32 = samples.iter().map(|&s| s * s).sum();
-    (sum_squares / samples.len() as f32).sqrt()
+    Ok(AudioStream {
+        _stream: stream,
+        stop_tx,
+    })
 }
 
 #[cfg(test)]
@@ -73,17 +152,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_calculate_rms() {
-        let samples = vec![0.1, 0.2, 0.3, 0.4, 0.5];
-        let rms = calculate_rms(&samples);
-        assert!(rms > 0.0);
-        assert!(rms < 1.0);
-    }
-
-    #[test]
-    fn test_calculate_rms_silence() {
-        let samples = vec![0.0; 100];
-        let rms = calculate_rms(&samples);
-        assert_eq!(rms, 0.0);
+    fn test_transcription_event_creation() {
+        let event = TranscriptionEvent {
+            text: "Hello world".to_string(),
+            timestamp: chrono::Utc::now().to_rfc3339(),
+            is_final: true,
+        };
+        assert_eq!(event.text, "Hello world");
+        assert!(event.is_final);
     }
 }

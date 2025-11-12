@@ -1,5 +1,7 @@
 use anyhow::Result;
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
+use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters};
 
 #[derive(Clone, Copy, Debug)]
 pub enum ModelType {
@@ -55,8 +57,7 @@ impl std::fmt::Display for ModelType {
 pub struct MobileWhisperEngine {
     model_type: ModelType,
     model_path: PathBuf,
-    // We'll integrate with whisper-rs in the next step
-    // For now, this is a placeholder structure
+    ctx: Arc<Mutex<WhisperContext>>,
 }
 
 impl MobileWhisperEngine {
@@ -66,17 +67,72 @@ impl MobileWhisperEngine {
         // Ensure model is downloaded
         let model_path = ensure_model_downloaded(model_type).await?;
 
+        // Initialize Whisper context
+        log::info!("Loading Whisper model from: {}", model_path.display());
+        let ctx_params = WhisperContextParameters::default();
+        let ctx = WhisperContext::new_with_params(
+            model_path.to_str().ok_or_else(|| {
+                anyhow::anyhow!("Invalid model path")
+            })?,
+            ctx_params,
+        )
+        .map_err(|e| anyhow::anyhow!("Failed to load Whisper model: {}", e))?;
+
+        log::info!("Whisper model loaded successfully");
+
         Ok(Self {
             model_type,
             model_path,
+            ctx: Arc::new(Mutex::new(ctx)),
         })
     }
 
-    pub fn transcribe_chunk(&self, _audio: &[f32]) -> Result<String> {
-        // TODO: Implement actual transcription using whisper-rs
-        // This will delegate to the underlying Whisper engine
-        log::debug!("Transcribing audio chunk (placeholder)");
-        Ok("Transcription placeholder".to_string())
+    pub fn transcribe_chunk(&self, audio: &[f32]) -> Result<String> {
+        log::debug!("Transcribing audio chunk of {} samples", audio.len());
+
+        let ctx = self.ctx.lock().map_err(|e| {
+            anyhow::anyhow!("Failed to lock Whisper context: {}", e)
+        })?;
+
+        // Create transcription parameters
+        let mut params = FullParams::new(SamplingStrategy::Greedy { best_of: 1 });
+
+        // Configure for mobile performance
+        params.set_n_threads(2); // Limited threads for mobile
+        params.set_translate(false); // No translation
+        params.set_language(Some("en")); // English only
+        params.set_print_special(false);
+        params.set_print_progress(false);
+        params.set_print_realtime(false);
+        params.set_print_timestamps(false);
+
+        // Convert audio to i16 (Whisper expects 16kHz, we'll resample if needed)
+        let audio_data = convert_f32_to_i16(audio);
+
+        // Run transcription
+        let mut state = ctx.create_state().map_err(|e| {
+            anyhow::anyhow!("Failed to create Whisper state: {}", e)
+        })?;
+
+        state
+            .full(params, &audio_data)
+            .map_err(|e| anyhow::anyhow!("Transcription failed: {}", e))?;
+
+        // Extract transcription text
+        let num_segments = state
+            .full_n_segments()
+            .map_err(|e| anyhow::anyhow!("Failed to get segment count: {}", e))?;
+
+        let mut result = String::new();
+        for i in 0..num_segments {
+            let segment = state
+                .full_get_segment_text(i)
+                .map_err(|e| anyhow::anyhow!("Failed to get segment text: {}", e))?;
+            result.push_str(&segment);
+        }
+
+        log::debug!("Transcription result: {}", result);
+        Ok(result.trim().to_string())
     }
 
     pub fn model_type(&self) -> ModelType {
@@ -86,6 +142,18 @@ impl MobileWhisperEngine {
     pub fn model_path(&self) -> &Path {
         &self.model_path
     }
+}
+
+// Convert f32 audio samples to i16 for Whisper
+fn convert_f32_to_i16(samples: &[f32]) -> Vec<i16> {
+    samples
+        .iter()
+        .map(|&s| {
+            // Clamp to [-1.0, 1.0] and convert to i16
+            let clamped = s.max(-1.0).min(1.0);
+            (clamped * 32767.0) as i16
+        })
+        .collect()
 }
 
 fn get_models_dir() -> Result<PathBuf> {
