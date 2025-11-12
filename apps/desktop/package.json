@@ -1,6 +1,6 @@
 {
-    "name": "meetily",
-    "version": "0.1.1",
+    "name": "@meetily/desktop",
+    "version": "0.2.0",
     "private": true,
     "main": "electron/main.js",
     "scripts": {
@@ -28,6 +28,9 @@
         "lint": "next lint"
     },
     "dependencies": {
+        "@meetily/shared-ui": "workspace:*",
+        "@meetily/shared-logic": "workspace:*",
+        "@meetily/i18n": "workspace:*",
         "@blocknote/core": "0.36.0",
         "@blocknote/react": "0.36.0",
         "@blocknote/shadcn": "0.36.0",
